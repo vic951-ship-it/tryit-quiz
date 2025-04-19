@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TRYIT Quiz Game</title>
+</head>
+<body>
+  <h2>Register</h2>
+  <input id="username" placeholder="Enter name" />
+  <button onclick="register()">Register</button>
+  <p id="reg-status"></p>
+
+  <h2>Pay</h2>
+  <button onclick="pay()">Pay 2 Ksh</button>
+  <p id="pay-status"></p>
+
+  <h2>Quiz</h2>
+  <div id="quiz"></div>
+  <button onclick="submit()">Submit</button>
+  <p id="submit-status"></p>
+
+  <h2>Results</h2>
+  <button onclick="getResults()">Get Results</button>
+  <pre id="result"></pre>
+
+  <script>
+    let username = null;
+    const API = "https://your-render-url.onrender.com"; // Replace this with the real API URL once deployed
+
+    function register() {
+      const user = document.getElementById("username").value;
+      if (user.trim() === "") return;
+
+      fetch(`${API}/register`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username: user })
+      }).then(r => r.json()).then(data => {
+        username = user;
+        document.getElementById("reg-status").innerText = "Registered: " + username;
+      });
+    }
+
+    function pay() {
+      if (!username) return alert("Please register first.");
+
+      fetch(`${API}/pay`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username: username })
+      }).then(r => r.json()).then(data => {
+        document.getElementById("pay-status").innerText = data.message;
+      });
+    }
+
+    function loadQuiz() {
+      fetch(`${API}/quiz`)
+        .then(r => r.json())
+        .then(quiz => {
+          let html = "";
+          quiz.forEach((q, i) => {
+            html += `<p>${q.question}</p>`;
+            q.options.forEach(opt => {
+              html += `<label><input type="radio" name="q${i}" value="${opt}">${opt}</label><br>`;
+            });
+          });
+          document.getElementById("quiz").innerHTML = html;
+        });
+    }
+
+    function submit() {
+      let answers = document.querySelectorAll("input[type=radio]:checked");
+      let score = 0;
+      if (answers.length > 0) score = answers.length; // fake scoring
+
+      fetch(`${API}/submit`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username: username, score: score })
+      }).then(r => r.json()).then(data => {
+        document.getElementById("submit-status").innerText = data.message;
+      });
+    }
+
+    function getResults() {
+      if (!username) return alert("Please register first.");
+
+      fetch(`${API}/results?username=${username}`)
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+        });
+    }
+
+    // Auto-load quiz after 5 seconds
+    setInterval(() => { if (username) loadQuiz(); }, 5000);
+  </script>
+</body>
+</html>
